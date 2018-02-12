@@ -1,7 +1,6 @@
-const User   = require('../models/userModel')
-const bcrypt = require('bcryptjs')
+const User   = require('../models/User')
 const jwt    = require('jsonwebtoken');
-
+const bcrypt = require('bcryptjs')
 const salt = bcrypt.genSaltSync(10);
 
 class UserController {
@@ -9,7 +8,7 @@ class UserController {
     User.find()
     .then(users => {
       res.status(200).json({
-        message: 'all user',
+        message: 'list all user',
         user: users
       })
     })
@@ -20,13 +19,13 @@ class UserController {
     let objUser = {
       username: req.body.username,
       email: req.body.email,
-      password: bcrypt.hashSync(req.body.password, salt),
-      status: req.body.status || 'user'
+      password: req.body.password,
+      status: req.body.status
     }
 
     let user = new User(objUser)
     user.save()
-    .then( dataUser => {
+    .then(dataUser => {
       res.status(200).json({
         message: 'new user created!',
         user: dataUser
@@ -35,11 +34,28 @@ class UserController {
     .catch(err => res.status(500).send(err))
   }
 
+  static getUserProfile(req, res) {
+    User.findById(req.params.id)
+      .then(user => {
+        if (!user) {
+          return res.status(400).json({
+            msg: `can't find this user`
+          })
+        }
+        res.status(200).json({
+          msg: 'find one user',
+          user: user
+        })
+        .catch(err => {
+          res.status(500).send(err)
+        })
+      })
+  }
+
   // middleware on
   static updateUser(req, res) {
     User.findOne({
-      _id: req.params.id,
-      email: req.decoded.email
+      _id: req.params.id
     })
     .then(user => {
       user.username = req.body.username || user.username
@@ -48,15 +64,21 @@ class UserController {
       user.status   = req.body.status || user.status,
 
       user.save()
-      .then( updatedUser => {
+      .then(updatedUser => {
         res.status(200).json({
           message: 'user updated',
           user: updatedUser
         })
       })
-      .catch(err => res.status(500).send(err))
+      .catch(err => {
+        console.log(err)
+        res.status(500).send(err)
+      })
     })
-    .catch(err => res.status(500).send(err))
+    .catch(err => {
+      console.log(err)
+      res.status(500).send(err)
+    })
   }
 
   static deleteUser(req, res) {
@@ -74,7 +96,7 @@ class UserController {
     let objUser = {
       username: req.body.username,
       email: req.body.email,
-      password: bcrypt.hashSync(req.body.password, salt)
+      password: req.body.password
     }
 
     let user = new User(objUser)
@@ -93,37 +115,40 @@ class UserController {
     User.findOne({
       email: req.body.email
     })
-    .then( user => {
-      if(!user) {
-        res.status(403).json({
-          message: 'username not found'
-        })
-      }
-
-      if(!bcrypt.compareSync(req.body.password, user.password)) {
-        res.status(403).json({ 
-          message: 'invalid username or password'
-        })
-      }
-
-      let payload = {
-        id       : user._id,
-        username : user.username,
-        email    : user.email,
-        status   : user.status
-      }
-      
-      jwt.sign(payload, process.env.SECRET_KEY, (err, token) => {
-        if(!err) {
-          res.status(200).json({
-            message : 'authentication valid!',
-            userId  : user._id,
-            token   : token
+      .then(user => {
+        if (!user) {
+          return res.status(403).json({
+            message: 'email not found'
           })
         }
+
+        if (!bcrypt.compareSync(req.body.password, user.password)) {
+          return res.status(403).json({ 
+            message: 'invalid email or password'
+          })
+        } 
+
+        let payload = {
+          id       : user._id,
+          username : user.username,
+          email    : user.email,
+          status   : user.status
+        }
+        
+        jwt.sign(payload, process.env.SECRET_KEY, (err, token) => {
+          if(!err) {
+            res.status(200).json({
+              message : 'authentication valid!',
+              userId  : user._id,
+              token   : token
+            })
+          }
+        })
       })
-    })
-    .catch(err => res.status(401).send(err)) 
+      .catch(err => {
+        console.log(err)
+        res.status(401).send(err)
+      }) 
   }
 
 }

@@ -8,7 +8,7 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 require('dotenv').config()
 
-mongoose.connect('mongodb://localhost/empritter'); //connect to database
+mongoose.connect(`mongodb://${process.env.USER_DB}:${process.env.DB_PASSWORD}@ds233208.mlab.com:33208/userboiler`); //connect to database
 
 const index = require('./routes/index');
 const users = require('./routes/users');

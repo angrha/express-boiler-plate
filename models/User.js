@@ -1,6 +1,9 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
+const bcrypt = require('bcryptjs')
+const salt = bcrypt.genSaltSync(10);
+
 const userSchema = new Schema({
   username: {
     type: String,
@@ -26,8 +29,16 @@ const userSchema = new Schema({
     type: String,
     enum: ['admin', 'user'],
     default: 'user'
-  },
-  profilePict: String,
+  }
+})
+
+userSchema.pre('save', function(next) {
+  if (this.isModified('password') || this.isNew) {
+    this.password = bcrypt.hashSync(this.password, salt);
+    next();
+  } else {
+    next();
+  }
 })
 
 const User = mongoose.model('User', userSchema);
