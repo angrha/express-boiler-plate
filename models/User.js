@@ -30,15 +30,16 @@ const userSchema = new Schema({
     enum: ['admin', 'user'],
     default: 'user'
   }
+},{
+  timestamps: true
 })
 
 userSchema.pre('save', function(next) {
   if (this.isModified('password') || this.isNew) {
     this.password = bcrypt.hashSync(this.password, salt);
     next();
-  } else {
-    next();
   }
+  next();
 })
 
 const User = mongoose.model('User', userSchema);
